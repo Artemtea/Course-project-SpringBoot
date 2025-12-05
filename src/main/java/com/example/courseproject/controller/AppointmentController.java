@@ -1,94 +1,45 @@
 package com.example.courseproject.controller;
 
+import com.example.courseproject.dto.AppointmentRequestDto;
 import com.example.courseproject.model.Appointment;
-import com.example.courseproject.repository.AppointmentRepository;
+import com.example.courseproject.service.AppointmentManager;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/appointments")
+@RequestMapping("/appointments") // базовый путь для всех операций с записями
 public class AppointmentController {
 
-    private final AppointmentRepository appointmentRepository;
+    private final AppointmentManager appointmentManager;
 
-    public AppointmentController(AppointmentRepository appointmentRepository) {
-        this.appointmentRepository = appointmentRepository;
+    // Через конструктор Spring подставит AppointmentManager
+    public AppointmentController(AppointmentManager appointmentManager) {
+        this.appointmentManager = appointmentManager;
     }
 
-    // 1. Создать запись на приём
+    // POST /appointments — создание записи
     @PostMapping
-    public Appointment createAppointment(@Valid @RequestBody Appointment appointment) {
-        // пока без дополнительной логики
-        appointment.setStatus("NEW");
-        return appointmentRepository.save(appointment);
+    public Appointment createAppointment(@Valid @RequestBody AppointmentRequestDto dto) {
+        return appointmentManager.createAppointment(dto);
     }
 
-    // 2. Получить все записи (для проверки, потом можно ограничить)
-    @GetMapping
-    public List<Appointment> getAll() {
-        return appointmentRepository.findAll();
+    // PATCH /appointments/{id}/cancel — отмена записи
+    @PatchMapping("/{id}/cancel")   // важно: PATCH и именно такой путь
+    public void cancelAppointment(@PathVariable Long id) {
+        appointmentManager.cancelAppointment(id);
     }
 
-    // 3. Получить записи по пациенту
+    // GET /appointments/patient/{patientId} — все записи конкретного пациента
     @GetMapping("/patient/{patientId}")
     public List<Appointment> getByPatient(@PathVariable Long patientId) {
-        return appointmentRepository.findByPatientId(patientId);
+        return appointmentManager.getAppointmentsByPatientId(patientId);
     }
 
-    // 4. Получить записи по врачу
+    // GET /appointments/doctor/{doctorId} — все записи конкретного врача
     @GetMapping("/doctor/{doctorId}")
     public List<Appointment> getByDoctor(@PathVariable Long doctorId) {
-        return appointmentRepository.findByDoctorId(doctorId);
+        return appointmentManager.getAppointmentsByDoctorId(doctorId);
     }
-
-    // отменить запись
-    @PatchMapping("/{id}/cancel")
-    public Appointment cancelAppointment(@PathVariable Long id) {
-        Appointment appointment = appointmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Appointment not found"));
-
-        appointment.setStatus("CANCELED");
-        return appointmentRepository.save(appointment);
-    }
-
-    @GetMapping("/doctor/{doctorId}/free-slots")
-    public List<LocalTime> getFreeSlots(
-            @PathVariable Long doctorId,
-            @RequestParam LocalDate date
-    ) {
-        // 10:00–18:00, шаг 30 минут
-        LocalDateTime start = date.atTime(10, 0);
-        LocalDateTime end = date.atTime(18, 0);
-
-        List<Appointment> appointments =
-                appointmentRepository.findByDoctorIdAndAppointmentDateTimeBetween(doctorId, start, end);
-
-        // список занятых времён
-        Set<LocalTime> busyTimes = appointments.stream()
-                .map(a -> a.getAppointmentDateTime().toLocalTime())
-                .collect(Collectors.toSet());
-
-        // генерируем все слоты
-        List<LocalTime> result = new ArrayList<>();
-        LocalTime time = LocalTime.of(10, 0);
-        while (!time.isAfter(LocalTime.of(18, 0))) {
-            if (!busyTimes.contains(time)) {
-                result.add(time);
-            }
-            time = time.plusMinutes(30);
-        }
-
-        return result;
-    }
-
-
 }

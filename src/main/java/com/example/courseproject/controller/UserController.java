@@ -1,47 +1,42 @@
 package com.example.courseproject.controller;
 
-import com.example.courseproject.model.User;
-import com.example.courseproject.repository.UserRepository;
+import com.example.courseproject.dto.UserRequestDto;
+import com.example.courseproject.dto.UserResponseDto;
+import com.example.courseproject.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-import jakarta.validation.Valid;
-
+// Теория: импортируем List для возврата списка пользователей
 @RestController
 @RequestMapping("/users")
 public class UserController {
 
-    private final UserRepository userRepository;
+    private final UserService userService;
 
-    public UserController(UserRepository userRepository) {
-        this.userRepository = userRepository;
+    public UserController(UserService userService) {
+        this.userService = userService;
     }
 
-    // регистрация пациента
     @PostMapping("/register")
-    public User registerPatient(@Valid @RequestBody User user) {
-        user.setRole("PATIENT");
-        return userRepository.save(user);
+    public UserResponseDto registerPatient(@Valid @RequestBody UserRequestDto requestDto) {
+        return userService.registerPatient(requestDto);
     }
 
-    // создание врача
     @PostMapping("/doctors")
-    public User createDoctor(@Valid @RequestBody User user) {
-        user.setRole("DOCTOR");
-        return userRepository.save(user);
+    public UserResponseDto createDoctor(@Valid @RequestBody UserRequestDto requestDto) {
+        return userService.createDoctor(requestDto);
     }
 
-    // создание администратора (пока без защиты)
     @PostMapping("/admin")
-    public User createAdmin(@Valid @RequestBody User user) {
-        user.setRole("ADMIN");
-        return userRepository.save(user);
+    public UserResponseDto createAdmin(@Valid @RequestBody UserRequestDto requestDto) {
+        return userService.createAdmin(requestDto);
     }
 
-    // временно: посмотреть всех пользователей
+    // Теория: вызываем метод сервиса, который уже возвращает List<UserResponseDto>
     @GetMapping
-    public List<User> getAll() {
-        return userRepository.findAll();
+    public List<UserResponseDto> getAllUsers() {
+        return userService.getAllUsers();
     }
 }
