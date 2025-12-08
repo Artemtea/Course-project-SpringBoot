@@ -4,6 +4,7 @@ import com.example.courseproject.dto.UserResponseDto;
 import com.example.courseproject.dto.UserRequestDto;
 import com.example.courseproject.model.User;
 import com.example.courseproject.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import org.springframework.stereotype.Service;
 
@@ -15,9 +16,12 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository) {
+
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     // Теория: RequestDTO → Entity → save → ResponseDTO
@@ -25,7 +29,7 @@ public class UserService {
         User user = new User();
         user.setFullName(requestDto.getFullName());
         user.setEmail(requestDto.getEmail());
-        user.setPassword(requestDto.getPassword()); // Позже хешировать!
+        user.setPassword(passwordEncoder.encode(requestDto.getPassword()));
         user.setPhone(requestDto.getPhone());
         user.setRole("PATIENT");
 
@@ -37,7 +41,7 @@ public class UserService {
         User user = new User();
         user.setFullName(requestDto.getFullName());
         user.setEmail(requestDto.getEmail());
-        user.setPassword(requestDto.getPassword());
+        user.setPassword(passwordEncoder.encode(requestDto.getPassword()));
         user.setPhone(requestDto.getPhone());
         user.setRole("DOCTOR");
 
@@ -49,7 +53,7 @@ public class UserService {
         User user = new User();
         user.setFullName(requestDto.getFullName());
         user.setEmail(requestDto.getEmail());
-        user.setPassword(requestDto.getPassword());
+        user.setPassword(passwordEncoder.encode(requestDto.getPassword()));
         user.setPhone(requestDto.getPhone());
         user.setRole("ADMIN");
 

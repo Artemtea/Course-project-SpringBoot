@@ -3,6 +3,10 @@ package com.example.courseproject.repository;
 import com.example.courseproject.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Optional;
+
 public interface UserRepository extends JpaRepository<User, Long> {
-    // пока ничего не добавляем, хватит базовых методов
+
+    Optional<User> findByEmail(String email);
+
 }

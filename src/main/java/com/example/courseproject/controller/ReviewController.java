@@ -1,48 +1,43 @@
 package com.example.courseproject.controller;
 
-import com.example.courseproject.model.Appointment;
-import com.example.courseproject.model.Review;
-import com.example.courseproject.repository.AppointmentRepository;
-import com.example.courseproject.repository.ReviewRepository;
+import com.example.courseproject.dto.ReviewRequestDto;
+import com.example.courseproject.dto.ReviewResponseDto;
+import com.example.courseproject.service.ReviewService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import com.example.courseproject.repository.AppointmentRepository; // если нужно
+import java.util.List;
+
 
 @RestController
 @RequestMapping("/reviews")
 public class ReviewController {
 
-    private final ReviewRepository reviewRepository;
-    private final AppointmentRepository appointmentRepository;
+    private final ReviewService reviewService;
 
-    public ReviewController(ReviewRepository reviewRepository,
+    public ReviewController(ReviewService reviewService,
                             AppointmentRepository appointmentRepository) {
-        this.reviewRepository = reviewRepository;
-        this.appointmentRepository = appointmentRepository;
+        this.reviewService = reviewService;
     }
 
-    // 1. Оставить отзыв по приёму
+    // Оставить отзыв по приёму
     @PostMapping("/{appointmentId}")
-    public Review createReview(@PathVariable Long appointmentId,
-                               @RequestBody Review review) {
-
-        Appointment appointment = appointmentRepository.findById(appointmentId)
-                .orElseThrow(() -> new RuntimeException("Appointment not found"));
-
-        review.setAppointment(appointment);
-        return reviewRepository.save(review);
+    public ReviewResponseDto createReview(@PathVariable Long appointmentId,
+                                          @Valid @RequestBody ReviewRequestDto dto) {
+        return reviewService.createReview(appointmentId, dto);
     }
 
-    // 2. Получить все отзывы по врачу
+    // Все отзывы по врачу
     @GetMapping("/doctor/{doctorId}")
-    public List<Review> getByDoctor(@PathVariable Long doctorId) {
-        return reviewRepository.findByAppointment_Doctor_Id(doctorId);
+    public List<ReviewResponseDto> getByDoctor(@PathVariable Long doctorId) {
+        return reviewService.getReviewsByDoctor(doctorId);
     }
 
-    // 3. (по желанию) Получить отзыв по конкретной записи
+    // Отзыв по конкретному приёму
     @GetMapping("/appointment/{appointmentId}")
-    public Review getByAppointment(@PathVariable Long appointmentId) {
-        return reviewRepository.findByAppointment_Id(appointmentId)
-                .orElseThrow(() -> new RuntimeException("Review not found"));
+    public ReviewResponseDto getByAppointment(@PathVariable Long appointmentId) {
+        return reviewService.getByAppointment(appointmentId);
     }
 }

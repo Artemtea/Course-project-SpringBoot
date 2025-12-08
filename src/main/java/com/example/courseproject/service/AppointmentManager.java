@@ -8,8 +8,10 @@ import com.example.courseproject.repository.AppointmentRepository;
 import com.example.courseproject.repository.DentalServiceRepository;
 import com.example.courseproject.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import com.example.courseproject.dto.AppointmentResponseDto;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class AppointmentManager {
@@ -27,8 +29,7 @@ public class AppointmentManager {
         this.dentalServiceRepository = dentalServiceRepository;
     }
 
-    // Создание записи: берём ID из DTO, находим сущности и сохраняем Appointment
-    public Appointment createAppointment(AppointmentRequestDto dto) {
+    public AppointmentResponseDto createAppointment(AppointmentRequestDto dto) {
         User patient = userRepository.findById(dto.getPatientId())
                 .orElseThrow(() -> new RuntimeException("Patient not found"));
         User doctor = userRepository.findById(dto.getDoctorId())
@@ -43,9 +44,21 @@ public class AppointmentManager {
         appointment.setAppointmentDateTime(dto.getAppointmentDateTime());
         appointment.setStatus("NEW");
 
-        return appointmentRepository.save(appointment);
+        Appointment saved = appointmentRepository.save(appointment);
+        return mapToResponse(saved);
     }
 
+    public List<AppointmentResponseDto> getAppointmentsByPatientId(Long patientId) {
+        return appointmentRepository.findByPatientId(patientId).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<AppointmentResponseDto> getAppointmentsByDoctorId(Long doctorId) {
+        return appointmentRepository.findByDoctorId(doctorId).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
     // Отмена записи: меняем статус на CANCELED
     public void cancelAppointment(Long id) {
         Appointment appointment = appointmentRepository.findById(id)
@@ -54,13 +67,28 @@ public class AppointmentManager {
         appointmentRepository.save(appointment);
     }
 
-    // Все записи пациента
-    public List<Appointment> getAppointmentsByPatientId(Long patientId) {
-        return appointmentRepository.findByPatientId(patientId);
-    }
+    // Теория: преобразуем сущность Appointment в удобный DTO для ответа
+    private AppointmentResponseDto mapToResponse(Appointment appointment) {
+        AppointmentResponseDto dto = new AppointmentResponseDto();
+        dto.setId(appointment.getId());
+        dto.setAppointmentDateTime(appointment.getAppointmentDateTime());
+        dto.setStatus(appointment.getStatus());
 
-    // Все записи врача
-    public List<Appointment> getAppointmentsByDoctorId(Long doctorId) {
-        return appointmentRepository.findByDoctorId(doctorId);
+        if (appointment.getPatient() != null) {
+            dto.setPatientId(appointment.getPatient().getId());
+            dto.setPatientName(appointment.getPatient().getFullName());
+        }
+
+        if (appointment.getDoctor() != null) {
+            dto.setDoctorId(appointment.getDoctor().getId());
+            dto.setDoctorName(appointment.getDoctor().getFullName());
+        }
+
+        if (appointment.getService() != null) {
+            dto.setServiceId(appointment.getService().getId());
+            dto.setServiceTitle(appointment.getService().getTitle());
+        }
+
+        return dto;
     }
 }

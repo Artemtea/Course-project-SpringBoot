@@ -14,6 +14,8 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     // найти все записи по id врача
     List<Appointment> findByDoctorId(Long doctorId);
 
+    Long countByDoctorId(Long doctorId);
+
     List<Appointment> findByDoctorIdAndAppointmentDateTimeBetween(
             Long doctorId,
             LocalDateTime start,
