@@ -33,12 +33,11 @@ public class AppointmentController {
     // GET /appointments/patient/{patientId}
     @GetMapping("/patient/{patientId}")
     public List<AppointmentResponseDto> getByPatient(@PathVariable Long patientId) {
-        return appointmentManager.getAppointmentsByPatientId(patientId);
+        return appointmentManager.getAppointmentsForCurrentPatient(patientId);
     }
 
-    // GET /appointments/doctor/{doctorId}
     @GetMapping("/doctor/{doctorId}")
     public List<AppointmentResponseDto> getByDoctor(@PathVariable Long doctorId) {
-        return appointmentManager.getAppointmentsByDoctorId(doctorId);
+        return appointmentManager.getAppointmentsForCurrentDoctor(doctorId);
     }
 }

@@ -9,6 +9,10 @@ import com.example.courseproject.repository.DentalServiceRepository;
 import com.example.courseproject.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import com.example.courseproject.dto.AppointmentResponseDto;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -48,13 +52,41 @@ public class AppointmentManager {
         return mapToResponse(saved);
     }
 
-    public List<AppointmentResponseDto> getAppointmentsByPatientId(Long patientId) {
+    public List<AppointmentResponseDto> getAppointmentsForCurrentPatient(Long patientId) {
+        // 1. Получаем текущего залогиненного пользователя
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String currentEmail = auth.getName(); // username = email
+
+        // 2. Находим пользователя по email
+        User currentUser = userRepository.findByEmail(currentEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+
+        // 3. Проверяем, что это пациент и что он запрашивает СВОЙ id
+        if (!"PATIENT".equals(currentUser.getRole()) || !currentUser.getId().equals(patientId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied");
+        }
+
+        // 4. Возвращаем только его записи
         return appointmentRepository.findByPatientId(patientId).stream()
-                .map(this::mapToResponse)
+                .map(this::mapToResponse) // твой метод маппинга в AppointmentResponseDto
                 .collect(Collectors.toList());
     }
 
-    public List<AppointmentResponseDto> getAppointmentsByDoctorId(Long doctorId) {
+    public List<AppointmentResponseDto> getAppointmentsForCurrentDoctor(Long doctorId) {
+        // 1. Текущий пользователь из SecurityContext
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String currentEmail = auth.getName();
+
+        // 2. Находим пользователя по email
+        User currentUser = userRepository.findByEmail(currentEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+
+        // 3. Проверяем роль и id
+        if (!"DOCTOR".equals(currentUser.getRole()) || !currentUser.getId().equals(doctorId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied");
+        }
+
+        // 4. Возвращаем только его приёмы
         return appointmentRepository.findByDoctorId(doctorId).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
